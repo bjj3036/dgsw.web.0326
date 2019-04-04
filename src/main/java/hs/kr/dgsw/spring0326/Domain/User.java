@@ -19,6 +19,7 @@ public class User {
     private String username;
     private String email;
     private String profilePath;
+    private String storagePath;
 
     @CreationTimestamp
     private LocalDateTime joined;
@@ -80,5 +81,13 @@ public class User {
 
     public void setProfilePath(String profilePath) {
         this.profilePath = profilePath;
+    }
+
+    public String getStoragePath() {
+        return storagePath;
+    }
+
+    public void setStoragePath(String storagePath) {
+        this.storagePath = storagePath;
     }
 }

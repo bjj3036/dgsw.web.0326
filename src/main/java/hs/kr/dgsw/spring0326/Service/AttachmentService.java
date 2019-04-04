@@ -2,6 +2,8 @@ package hs.kr.dgsw.spring0326.Service;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface AttachmentService {
-    String saveImage(Long id, MultipartFile uploadFile);
+    List<String> saveImage(Long id, MultipartFile uploadFile);
 }

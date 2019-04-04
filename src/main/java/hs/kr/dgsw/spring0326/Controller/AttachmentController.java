@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,7 +22,7 @@ public class AttachmentController {
     AttachmentService attachmentService;
 
     @PostMapping("/attachment/{id}")
-    public String upload(@PathVariable Long id, @RequestPart MultipartFile uploadFile) {
+    public List<String> upload(@PathVariable Long id, @RequestPart MultipartFile uploadFile) {
         return attachmentService.saveImage(id, uploadFile);
     }
 }

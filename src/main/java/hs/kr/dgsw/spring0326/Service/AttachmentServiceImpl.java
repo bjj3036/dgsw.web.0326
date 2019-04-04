@@ -11,6 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,7 +23,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private UserRepository userRepository;
 
     @Override
-    public String saveImage(Long id, MultipartFile uploadFile) {
+    public List<String> saveImage(Long id, MultipartFile uploadFile) {
         Optional<User> found = this.userRepository.findById(id);
         if(!found.isPresent())
             return null;
@@ -35,9 +37,14 @@ public class AttachmentServiceImpl implements AttachmentService {
         try {
             destFile.getParentFile().mkdirs();
             uploadFile.transferTo(destFile);
-            foundUser.setProfilePath("/"+fileName);
+            String srcPath = "/"+fileName;
+            foundUser.setProfilePath(srcPath);
+            foundUser.setStoragePath(destFilename);
             this.userRepository.save(foundUser);
-            return "/"+fileName;
+            List<String> paths = new ArrayList<>();
+            paths.add(destFilename);
+            paths.add(srcPath);
+            return paths;
         } catch (IOException e) {
             return null;
         }

@@ -132,7 +132,8 @@
             contentType: false,
             success: function (response) {
                 console.log(response)
-                $(`#userImg${userId}`).prop("src", response)
+                $(`#userImg${userId}`).prop('src', response[1])
+                $(`#userDiv${userId}`).find('div:nth-child(5)').html('저장위치: ' + response[0])
             }
         })
     }
@@ -143,22 +144,23 @@
                 <div style="width:150px;">${comment.username}</div>
                 <div style="width:350px;">${comment.content}</div>
                 <div style="width:300px">${comment.created}</div>
-                <div style="width: 50px"><button onclick="updateComment(this, ${comment.id})">수정</button><button onclick="deleteComment(this, ${comment.id})">삭제</button></div>
+                <div style="width: 200px"><button onclick="updateComment(this, ${comment.id})">수정</button><button onclick="deleteComment(this, ${comment.id})">삭제</button></div>
              </div>`
         )
     }
 
     function addUserList(user) {
         $('#userViewer').append(
-            `<div id="userDiv${user.id}" style="display: flex; border-bottom: 1px solid silver;">
+            `<div id="userDiv${user.id}" style="display: flex; align-content: center; border-bottom: 1px solid silver;">
                 <div style="width: 30px">${user.id}</div>
-                <div style="margin-right: 20px"><img id="userImg${user.id}" alt="등록되지 않은 프사" style="width: 100px; height: 100px" src="${user.profilePath||""}"></div>
+                <div style="margin-right: 20px"><img id="userImg${user.id}" alt="등록되지 않은 프사" style="width: 100px; height: 100px" src="${user.profilePath || ""}"></div>
                 <div style="width:150px;">${user.username}</div>
-                <div style="width:350px;">${user.email}</div>
-                <div style="width: 50px">
+                <div style="width:200px;">${user.email}</div>
+                <div style="width: 200px;">저장위치: ${user.storagePath || "없음"}</div>
+                <div style="width: 200px">
                 <button onclick="updateUser(this, ${user.id})">수정</button>
                 <button onclick="deleteUser(this, ${user.id})">삭제</button>
-                <input type="file" onchange="uploadFile(this, ${user.id})">
+                <input type="file" onchange="uploadFile(this, ${user.id})" value="사진 등록">
                 </div>
              </div>`
         )
