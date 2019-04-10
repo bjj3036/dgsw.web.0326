@@ -1,7 +1,6 @@
 package hs.kr.dgsw.spring0326.Protocol;
 
 import hs.kr.dgsw.spring0326.Domain.Comment;
-import lombok.Data;
 
 public class CommentUsernameProtocol
         extends Comment {

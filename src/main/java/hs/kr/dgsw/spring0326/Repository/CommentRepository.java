@@ -10,7 +10,6 @@ import java.util.List;
 public interface CommentRepository
         extends JpaRepository<Comment, Long> {
     List<Comment> findByUserId(Long userId);
-
     //대량의 데이터 Update Delete 할 때
     @Transactional
     void deleteAllByUserId(Long userId);

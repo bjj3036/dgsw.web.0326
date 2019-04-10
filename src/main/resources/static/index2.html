@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <title>CommentShow</title>
+    <style>
+        button {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<input id="userId" placeholder="userId">
+<input id="content" placeholder="content">
+<button id="save" onclick="saveComment()">확인</button>
+<div id="viewer" style="display: flex; flex-direction: column-reverse">
+
+</div>
+<hr>
+<input id="username" placeholder="username"><input id="email" placeholder="email">
+<button onclick="saveUser()">확인</button>
+<div>
+    <input type="file" id="upload-file">
+    <button onclick="uploadFile(event)">파일 업로드</button>
+</div>
+<div id="userViewer" style="display: flex; flex-direction: column">
+
+</div>
+<button onclick="openLoginDialog()">로그인</button>
+<div id="loginDialog" style="position: fixed; width: 100vw; height: 100vh; background-color: #00000011; top: 0; left: 0; display: none; justify-content: center; align-items: center;">
+    <div style="background-color: white; text-align: center; width: 500px; height: 200px">
+        <div style="margin: 30px 0px">로그인</div>
+        <div>
+            <input placeholder="사용자 아이디"><br>
+            <input placeholder="패스워드" type="password">
+        </div>
+        <div style="margin: 30px 0px">
+            <button>확인</button>
+            <button onclick="closeLoginDialod()">취소</button>
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        loadAllComment()
+        loadAllUser()
+    })
+
+    function loadAllComment() {
+        $('#viewer').empty()
+        $.ajax(
+            {
+                url: '/listComments',
+                success: function (response) {
+                    for (let i = 0; i < response.length; i++) {
+                        let comment = response[i]
+                        addList(comment)
+                    }
+                }
+            }
+        )
+    }
+
+    function loadAllUser() {
+        $('#userViewer').empty()
+        $.ajax(
+            {
+                url: '/listUser',
+                success: function (response) {
+                    for (let i = 0; i < response.length; i++) {
+                        let user = response[i]
+                        addUserList(user)
+                    }
+                }
+            }
+        )
+
+    }
+
+    function saveComment() {
+        let userId = $('#userId').val()
+        let content = $('#content').val()
+        if (!(content === "" || content === 'undefined')) {
+            $.ajax({
+                    url: '/saveComment',
+                    type: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        userId: userId,
+                        content: content
+                    }),
+                    success: function (resonse) {
+                        addList(resonse)
+                    },
+                    error: function (err) {
+                        alert('저장 실패하였습니다!')
+                    }
+                }
+            )
+        }
+    }
+
+    function saveUser() {
+        let username = $('#username').val()
+        let email = $('#email').val()
+        if (!(username === "" || username === undefined || email === "" || email === undefined)) {
+            $.ajax({
+                    url: '/saveUser',
+                    type: "POST",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        username: username,
+                        email: email
+                    }),
+                    success: function (resonse) {
+                        addUserList(resonse)
+                    },
+                    error: function (err) {
+                        alert('유저 등록에 실패하였습니다!')
+                    }
+                }
+            )
+        }
+    }
+
+    function uploadFile(input, userId) {
+        input = $(input)[0]
+        let file = input.files[0]
+        let formData = new FormData()
+        formData.append('uploadFile', file)
+        $.ajax({
+            url: `/attachment/${userId}`,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                $(`#userImg${userId}`).prop('src', `/attachment/user/${userId}?` + (Math.random()))
+                //웹브라우저 캐쉬 문제로 url 랜덤 생성
+                $(`#userDiv${userId}`).find('div:nth-child(5)').html('저장위치: ' + response.storedPath)
+            }
+        })
+    }
+
+    function addList(comment) {
+        $('#viewer').append(
+            `<div id="commentDiv${comment.id}" style="display: flex; border-bottom: 1px solid silver;">
+                <div style="width:150px;">${comment.username}</div>
+                <div style="width:350px;">${comment.content}</div>
+                <div style="width:300px">${comment.created}</div>
+                <div style="width: 200px"><button onclick="updateComment(this, ${comment.id})">수정</button><button onclick="deleteComment(this, ${comment.id})">삭제</button></div>
+             </div>`
+        )
+    }
+
+    function addUserList(user) {
+        $('#userViewer').append(
+            `<div id="userDiv${user.id}" style="display: flex; align-content: center; border-bottom: 1px solid silver;">
+                <div style="width: 30px">${user.id}</div>
+                <div style="margin-right: 20px"><img id="userImg${user.id}" alt="등록되지 않은 프사" style="width: 100px; height: 100px" src="/attachment/user/${user.id}"></div>
+                <div style="width:150px;">${user.username}</div>
+                <div style="width:200px;">${user.email}</div>
+                <div style="width: 500px;">저장위치: ${user.filePath || "없음"}</div>
+                <div style="width: 200px">
+                <button onclick="updateUser(this, ${user.id})">수정</button>
+                <button onclick="deleteUser(this, ${user.id})">삭제</button>
+                <input type="file" onchange="uploadFile(this, ${user.id})" accept="image/*" value="사진 등록">
+                </div>
+             </div>`
+        )
+    }
+
+    function deleteComment(button, id) {
+        let comment = $(`#commentDiv${id}`)
+        if ($(button).html() === '삭제') {
+            $.ajax({
+                url: `deleteComment/${id}`,
+                type: "delete",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                success: function (response) {
+                    if (response) {
+                        $(`#commentDiv${id}`).remove()
+                    } else {
+                        alert('삭제하지 못하였습니다!')
+                    }
+                }
+            })
+        } else {
+            $.ajax({
+                url: `findCommentById/${id}`,
+                type: "get",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                success: function (response) {
+                    if (response) {
+                        comment.find('div:nth-child(2)').html(response.content)
+                    } else {
+                        alert('삭제하지 못하였습니다!')
+                    }
+                }
+            })
+            $(button).prev().html('수정')
+            $(button).html('삭제')
+        }
+    }
+
+    function deleteUser(button, id) {
+        let user = $(`#userDiv${id}`)
+        if ($(button).html() === '삭제') {
+            $.ajax({
+                url: `deleteUser/${id}`,
+                type: "delete",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                success: function (response) {
+                    if (response) {
+                        $(`#userDiv${id}`).remove()
+                        loadAllComment()
+                    } else {
+                        alert('삭제하지 못하였습니다!')
+                    }
+                }
+            })
+        } else {
+            $.ajax({
+                url: `findUser/${id}`,
+                type: "get",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                success: function (response) {
+                    if (response) {
+                        user.find('div:nth-child(2)').html(response.username)
+                        user.find('div:nth-child(3)').html(response.email)
+                    } else {
+                        alert('삭제하지 못하였습니다!')
+                    }
+                }
+            })
+            $(button).prev().html('수정')
+            $(button).html('삭제')
+        }
+    }
+
+    function updateComment(button, id) {
+        let comment = $(`#commentDiv${id}`)
+        if ($(button).html() === '수정') {
+            let content = comment.find('div:nth-child(2)').html()
+            let input = `<input value="${content}">`
+            comment.find('div:nth-child(2)').html(input)
+            $(button).html('확인')
+            $(button).next().html('취소')
+        } else {
+            let input = $(comment.find('div:nth-child(2)').find('input')[0])
+            $.ajax({
+                url: `updateComment`,
+                type: "put",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    id: id,
+                    content: input.val()
+                }),
+                success: function (response) {
+                    if (response !== 'undefinded')
+                        comment.find('div:nth-child(2)').html(response.content)
+                }
+            })
+            $(button).html('수정')
+            $(button).next().html('삭제')
+        }
+    }
+
+    function updateUser(button, id) {
+        let user = $(`#userDiv${id}`)
+        if ($(button).html() === '수정') {
+            let name = user.find('div:nth-child(3)').html()
+            let input1 = `<input value="${name}">`
+            let email = user.find('div:nth-child(4)').html()
+            let input2 = `<input value="${email}">`
+            user.find('div:nth-child(3)').html(input1)
+            user.find('div:nth-child(4)').html(input2)
+            $(button).html('확인')
+            $(button).next().html('취소')
+        } else {
+            let input1 = $(user.find('div:nth-child(3)').find('input')[0])
+            let input2 = $(user.find('div:nth-child(4)').find('input')[0])
+            $.ajax({
+                url: `updateUser`,
+                type: "put",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({
+                    id: id,
+                    username: input1.val(),
+                    email: input2.val()
+                }),
+                success: function (response) {
+                    if (response)
+                        user.find('div:nth-child(3)').html(response.username)
+                    user.find('div:nth-child(4)').html(response.email)
+                }
+            })
+            $(button).html('수정')
+            $(button).next().html('삭제')
+        }
+    }
+
+    function openLoginDialog() {
+        $('#loginDialog').css('display', 'flex')
+        $('#loginDialog').show()
+    }
+
+    function closeLoginDialod() {
+        $('#loginDialog').hide()
+    }
+
+</script>
+
+</body>
+</html>

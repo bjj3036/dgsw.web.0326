@@ -19,6 +19,8 @@ public class Comment {
 
     private Long userId;
     private String content;
+    private String filePath;
+    private String fileName;
 
     @CreationTimestamp
     private LocalDateTime created;
@@ -40,6 +42,8 @@ public class Comment {
         this.content = comment.getContent();
         this.created = comment.getCreated();
         this.modified = comment.getModified();
+        this.filePath = comment.getFilePath();
+        this.fileName = comment.getFileName();
     }
 
     public Long getId() {
@@ -80,5 +84,21 @@ public class Comment {
 
     public void setModified(LocalDateTime modified) {
         this.modified = modified;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
     }
 }

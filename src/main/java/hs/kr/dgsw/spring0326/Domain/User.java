@@ -18,8 +18,10 @@ public class User {
 
     private String username;
     private String email;
-    private String profilePath;
-    private String storagePath;
+    private String filePath;
+    private String fileName;
+
+    private String password;
 
     @CreationTimestamp
     private LocalDateTime joined;
@@ -75,19 +77,27 @@ public class User {
         this.modified = modified;
     }
 
-    public String getProfilePath() {
-        return profilePath;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setProfilePath(String profilePath) {
-        this.profilePath = profilePath;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
-    public String getStoragePath() {
-        return storagePath;
+    public String getFileName() {
+        return fileName;
     }
 
-    public void setStoragePath(String storagePath) {
-        this.storagePath = storagePath;
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

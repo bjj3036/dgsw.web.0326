@@ -1,320 +1,309 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <title>CommentShow</title>
-    <style>
-        button {
-            display: inline-block;
+    <title>DGSW SNS</title>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+    <script>
+        var user;
+        $(function () {
+            closePostDialog()
+            closeLoginDialog()
+            closeEditDialog()
+            loadAllComment()
+        })
+
+        function loadAllComment() {
+            $.ajax(
+                {
+                    url: '/listComments',
+                    success: function (response) {
+                        $('#postBox').empty()
+                        for (let i = 0; i < response.length; i++) {
+                            let comment = response[i]
+                            addPost(comment)
+                        }
+                    }
+                }
+            )
         }
-    </style>
+
+        function addPost(comment) {
+            $('#postBox').append(
+                `<div id="post${comment.id}" style="background-color: white; height: auto; display: flex; justify-content: center; flex-wrap: wrap;border: 2px solid black; margin: 5px;">
+                <img id="postImg${comment.id}" src="/attachment/comment/${comment.id}" style="width: 400px; height: 300px">
+                <div style="width: 480px">
+                <div style="display: flex; justify-content: space-between">
+                <div>${comment.username}</div>
+                <div>${comment.created}</div>
+                <button onclick="openEditDialog(${comment.id})">수정</button><button onclick="removePost(${comment.id})">삭제</button>
+                </div>
+                <div id="postContent${comment.id}">${comment.content}</div>
+                </div>
+                </div>`);
+        }
+
+        function openPostDialog() {
+            if (user) {
+                $('#postImage').val('');
+                $('#postContent').val('');
+                $('#postingDialog').show();
+            } else {
+                alert('로그인이 필요합니다!')
+                openLoginDialog()
+            }
+        }
+
+        function closePostDialog() {
+            $('#postingDialog').hide();
+        }
+
+        function postComment() {
+            let input = $('#postImage')[0]
+            let file = input.files[0]
+            if (file) {
+
+                let formData = new FormData()
+                formData.append('uploadFile', file)
+                $.ajax({
+                    url: `/attachmentPost/`,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        $.ajax({
+                                url: '/saveComment',
+                                type: "POST",
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                dataType: 'json',
+                                data: JSON.stringify({
+                                    userId: user.id,
+                                    content: $('#postContent').val(),
+                                    filePath: response.storedPath,
+                                    fileName: response.originalName
+                                }),
+                                success: function (response) {
+                                    addPost(response)
+                                },
+                                error: function (err) {
+                                    alert('저장 실패하였습니다!')
+                                }
+                            }
+                        )
+                    }
+                })
+                closePostDialog()
+            }
+        }
+
+        function openLoginDialog() {
+            $('#id').val('');
+            $('#password').val('');
+            $('#loginDialog').show();
+        }
+
+        function closeLoginDialog() {
+            $('#loginDialog').hide();
+        }
+
+        function openEditDialog(id) {
+            if (user) {
+                $('#editPostId').html(id)
+                $('#editPostContent').val($('#postContent'+id).html())
+                $('#editPostImage').val('')
+                $('#editPostDialog').show()
+            } else {
+                alert('로그인이 필요합니다!')
+                openLoginDialog()
+            }
+        }
+
+        function closeEditDialog() {
+            $('#editPostDialog').hide()
+        }
+
+        function login() {
+            $.ajax({
+                url: '/login',
+                type: "POST",
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                dataType: 'json',
+                data: JSON.stringify({
+                    id: $('#id').val(),
+                    password: $('#password').val(),
+                }),
+                success: function (response) {
+                    if (response) {
+                        user = response
+                        $('#login').hide();
+                        $('#userImage').prop('src', '/attachment/user/' + response.id)
+                        $('#userName').html(response.username)
+                        $('#userEmail').html(response.email)
+                        $('#userInfo').show();
+                    }
+                },
+                error: function (err) {
+                    alert('저장 실패하였습니다!')
+                }
+            })
+            closeLoginDialog();
+        }
+
+        function removePost(id) {
+            if (user) {
+                $.ajax({
+                    url: '/deleteComment/' + id,
+                    type: "DELETE",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        if (response) {
+                            $('#post' + id).remove()
+                        } else {
+                            alert('삭제 실패')
+                        }
+                    }
+                })
+            } else {
+                openLoginDialog()
+            }
+        }
+
+        function editPost() {
+            let input = $('#editPostImage')[0]
+            let file = input.files[0]
+            if (file) {
+                let formData = new FormData()
+                formData.append('uploadFile', file)
+                $.ajax({
+                    url: `/attachmentPost/`,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (response) {
+                        $.ajax({
+                                url: '/updateComment',
+                                type: "PUT",
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                dataType: 'json',
+                                data: JSON.stringify({
+                                    id: $('#editPostId').html(),
+                                    userId: user.id,
+                                    content: $('#editPostContent').val(),
+                                    filePath: response.storedPath,
+                                    fileName: response.originalName
+                                }),
+                                success: function (response) {
+                                    $('#postImg'+response.id).prop('src', '/attachment/comment/' + response.id + '?' + new Date().getTime())
+                                    $('#postContent' + response.id).html(response.content)
+                                },
+                                error: function (err) {
+                                    alert('수정 실패하였습니다')
+                                }
+                            }
+                        )
+                    }
+                })
+            }else{
+                $.ajax({
+                        url: '/updateComment',
+                        type: "PUT",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        dataType: 'json',
+                        data: JSON.stringify({
+                            id: $('#editPostId').html(),
+                            userId: user.id,
+                            content: $('#editPostContent').val()
+                        }),
+                        success: function (response) {
+                            $('#postImg').prop('src', '/attachment/comment/' + response.id + '?' + new Date().getTime())
+                            $('#postContent' + response.id).html(response.content)
+                        },
+                        error: function (err) {
+                            alert('수정 실패하였습니다')
+                        }
+                    }
+                )
+            }
+            closeEditDialog()
+        }
+    </script>
 </head>
 <body>
-<input id="userId" placeholder="userId">
-<input id="content" placeholder="content">
-<button id="save" onclick="saveComment()">확인</button>
-<div id="viewer" style="display: flex; flex-direction: column-reverse">
+<header>
+    DGSW SNS
+</header>
+<section>
+    <div>
+        <button style="height: 50px; width: 500px; display: block" onclick="openPostDialog()">새 글 쓰기</button>
+        <div style="height:90%; overflow: scroll">
+            <div id="postBox" style="width: 500px; display: flex; flex-wrap: wrap; flex-direction: column-reverse;">
 
+            </div>
+        </div>
+    </div>
+</section>
+<aside>
+    <button id="login" onclick="openLoginDialog()">로그인</button>
+    <div id="userInfo" style="display: none">
+        <img id="userImage" width="100px" height="100px">
+        <div id="userName"></div>
+        <div id="userEmail"></div>
+    </div>
+</aside>
+<div id="postingDialog" class="dialog">
+    <div style="width: 500px; height: 500px; background-color: white; display: flex; justify-content: center; flex-wrap: wrap">
+        <h1>글쓰기</h1>
+        <input id="postImage" type="file" style="width: 450px; height: 300px;background-color: gray">
+        <input id="postContent" placeholder="사진설명" style="font-size: 20px; width: 300px;">
+        <div style="width: 500px; display: inherit; justify-content: center; height: 30px">
+            <button onclick="postComment()">확인</button>
+            <button onclick="closePostDialog()">취소</button>
+        </div>
+    </div>
 </div>
-<hr>
-<input id="username" placeholder="username"><input id="email" placeholder="email">
-<button onclick="saveUser()">확인</button>
-<div>
-    <input type="file" id="upload-file">
-    <button onclick="uploadFile(event)">파일 업로드</button>
+<div id="editPostDialog" class="dialog">
+    <div style="width: 500px; height: 500px; background-color: white; display: flex; justify-content: center; flex-wrap: wrap">
+        <span id="editPostId" style="visibility: hidden"></span>
+        <h1>글 수정</h1>
+        <input id="editPostImage" type="file" style="width: 450px; height: 300px;background-color: gray">
+        <input id="editPostContent" placeholder="사진설명" style="font-size: 20px; width: 300px;">
+        <div style="width: 500px; display: inherit; justify-content: center; height: 30px">
+            <button onclick="editPost()">확인</button>
+            <button onclick="closeEditDialog()">취소</button>
+        </div>
+    </div>
 </div>
-<div id="userViewer" style="display: flex; flex-direction: column">
-
+<div id="loginDialog" class="dialog">
+    <div style="width: 350px; height: 300px; background-color: white; display: flex; justify-content: center; flex-wrap: wrap">
+        <h1>로그인</h1>
+        <input id="id" style="font-size: 20px; width: 300px;" placeholder="아이디">
+        <input id="password" type="password" style="font-size: 20px; width: 300px;" placeholder="비밀번호">
+        <div style="width: 300px; display: inherit; justify-content: center; ">
+            <button onclick="login()">확인</button>
+            <button onclick="closeLoginDialog()">취소</button>
+        </div>
+    </div>
 </div>
-<script>
-    $(function () {
-        loadAllComment()
-        loadAllUser()
-    })
-
-    function loadAllComment() {
-        $('#viewer').empty()
-        $.ajax(
-            {
-                url: '/listComments',
-                success: function (response) {
-                    for (let i = 0; i < response.length; i++) {
-                        let comment = response[i]
-                        addList(comment)
-                    }
-                }
-            }
-        )
-    }
-
-    function loadAllUser() {
-        $('#userViewer').empty()
-        $.ajax(
-            {
-                url: '/listUser',
-                success: function (response) {
-                    for (let i = 0; i < response.length; i++) {
-                        let user = response[i]
-                        addUserList(user)
-                    }
-                }
-            }
-        )
-
-    }
-
-    function saveComment() {
-        let userId = $('#userId').val()
-        let content = $('#content').val()
-        if (!(content === "" || content === 'undefined')) {
-            $.ajax({
-                    url: '/saveComment',
-                    type: "POST",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    dataType: 'json',
-                    data: JSON.stringify({
-                        userId: userId,
-                        content: content
-                    }),
-                    success: function (resonse) {
-                        addList(resonse)
-                    },
-                    error: function (err) {
-                        alert('저장 실패하였습니다!')
-                    }
-                }
-            )
-        }
-    }
-
-    function saveUser() {
-        let username = $('#username').val()
-        let email = $('#email').val()
-        if (!(username === "" || username === undefined || email === "" || email === undefined)) {
-            $.ajax({
-                    url: '/saveUser',
-                    type: "POST",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    dataType: 'json',
-                    data: JSON.stringify({
-                        username: username,
-                        email: email
-                    }),
-                    success: function (resonse) {
-                        addUserList(resonse)
-                    },
-                    error: function (err) {
-                        alert('유저 등록에 실패하였습니다!')
-                    }
-                }
-            )
-        }
-    }
-
-    function uploadFile(input, userId) {
-        input = $(input)[0]
-        console.log(input)
-        let file = input.files[0]
-        let formData = new FormData()
-        formData.append('uploadFile', file)
-        $.ajax({
-            url: `/attachment/${userId}`,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                console.log(response)
-                $(`#userImg${userId}`).prop('src', response[1])
-                $(`#userDiv${userId}`).find('div:nth-child(5)').html('저장위치: ' + response[0])
-            }
-        })
-    }
-
-    function addList(comment) {
-        $('#viewer').append(
-            `<div id="commentDiv${comment.id}" style="display: flex; border-bottom: 1px solid silver;">
-                <div style="width:150px;">${comment.username}</div>
-                <div style="width:350px;">${comment.content}</div>
-                <div style="width:300px">${comment.created}</div>
-                <div style="width: 200px"><button onclick="updateComment(this, ${comment.id})">수정</button><button onclick="deleteComment(this, ${comment.id})">삭제</button></div>
-             </div>`
-        )
-    }
-
-    function addUserList(user) {
-        $('#userViewer').append(
-            `<div id="userDiv${user.id}" style="display: flex; align-content: center; border-bottom: 1px solid silver;">
-                <div style="width: 30px">${user.id}</div>
-                <div style="margin-right: 20px"><img id="userImg${user.id}" alt="등록되지 않은 프사" style="width: 100px; height: 100px" src="${user.profilePath || ""}"></div>
-                <div style="width:150px;">${user.username}</div>
-                <div style="width:200px;">${user.email}</div>
-                <div style="width: 200px;">저장위치: ${user.storagePath || "없음"}</div>
-                <div style="width: 200px">
-                <button onclick="updateUser(this, ${user.id})">수정</button>
-                <button onclick="deleteUser(this, ${user.id})">삭제</button>
-                <input type="file" onchange="uploadFile(this, ${user.id})" value="사진 등록">
-                </div>
-             </div>`
-        )
-    }
-
-    function deleteComment(button, id) {
-        let comment = $(`#commentDiv${id}`)
-        if ($(button).html() === '삭제') {
-            $.ajax({
-                url: `deleteComment/${id}`,
-                type: "delete",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                success: function (response) {
-                    if (response) {
-                        $(`#commentDiv${id}`).remove()
-                    } else {
-                        alert('삭제하지 못하였습니다!')
-                    }
-                }
-            })
-        } else {
-            $.ajax({
-                url: `findCommentById/${id}`,
-                type: "get",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                success: function (response) {
-                    if (response) {
-                        comment.find('div:nth-child(2)').html(response.content)
-                    } else {
-                        alert('삭제하지 못하였습니다!')
-                    }
-                }
-            })
-            $(button).prev().html('수정')
-            $(button).html('삭제')
-        }
-    }
-
-    function deleteUser(button, id) {
-        let user = $(`#userDiv${id}`)
-        if ($(button).html() === '삭제') {
-            $.ajax({
-                url: `deleteUser/${id}`,
-                type: "delete",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                success: function (response) {
-                    if (response) {
-                        $(`#userDiv${id}`).remove()
-                        loadAllComment()
-                    } else {
-                        alert('삭제하지 못하였습니다!')
-                    }
-                }
-            })
-        } else {
-            $.ajax({
-                url: `findUser/${id}`,
-                type: "get",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                success: function (response) {
-                    if (response) {
-                        user.find('div:nth-child(2)').html(response.username)
-                        user.find('div:nth-child(3)').html(response.email)
-                    } else {
-                        alert('삭제하지 못하였습니다!')
-                    }
-                }
-            })
-            $(button).prev().html('수정')
-            $(button).html('삭제')
-        }
-    }
-
-    function updateComment(button, id) {
-        let comment = $(`#commentDiv${id}`)
-        if ($(button).html() === '수정') {
-            let content = comment.find('div:nth-child(2)').html()
-            let input = `<input value="${content}">`
-            comment.find('div:nth-child(2)').html(input)
-            $(button).html('확인')
-            $(button).next().html('취소')
-        } else {
-            let input = $(comment.find('div:nth-child(2)').find('input')[0])
-            $.ajax({
-                url: `updateComment`,
-                type: "put",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({
-                    id: id,
-                    content: input.val()
-                }),
-                success: function (response) {
-                    if (response !== 'undefinded')
-                        comment.find('div:nth-child(2)').html(response.content)
-                }
-            })
-            $(button).html('수정')
-            $(button).next().html('삭제')
-        }
-    }
-
-    function updateUser(button, id) {
-        let user = $(`#userDiv${id}`)
-        if ($(button).html() === '수정') {
-            let name = user.find('div:nth-child(3)').html()
-            let input1 = `<input value="${name}">`
-            let email = user.find('div:nth-child(4)').html()
-            let input2 = `<input value="${email}">`
-            user.find('div:nth-child(3)').html(input1)
-            user.find('div:nth-child(4)').html(input2)
-            $(button).html('확인')
-            $(button).next().html('취소')
-        } else {
-            let input1 = $(user.find('div:nth-child(3)').find('input')[0])
-            let input2 = $(user.find('div:nth-child(4)').find('input')[0])
-            $.ajax({
-                url: `updateUser`,
-                type: "put",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify({
-                    id: id,
-                    username: input1.val(),
-                    email: input2.val()
-                }),
-                success: function (response) {
-                    if (response)
-                        user.find('div:nth-child(3)').html(response.username)
-                    user.find('div:nth-child(4)').html(response.email)
-                }
-            })
-            $(button).html('수정')
-            $(button).next().html('삭제')
-        }
-    }
-
-</script>
-
 </body>
 </html>
