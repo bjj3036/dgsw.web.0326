@@ -148,6 +148,7 @@
                         $('#userImage').prop('src', '/attachment/user/' + response.id)
                         $('#userName').html(response.username)
                         $('#userEmail').html(response.email)
+                        $('#userCreated').html(response.joined)
                         $('#userInfo').show();
                     }
                 },
@@ -269,6 +270,7 @@
         <img id="userImage" width="100px" height="100px">
         <div id="userName"></div>
         <div id="userEmail"></div>
+        <div id="userCreated"></div>
     </div>
 </aside>
 <div id="postingDialog" class="dialog">
