@@ -115,7 +115,7 @@
         function openEditDialog(id) {
             if (user) {
                 $('#editPostId').html(id)
-                $('#editPostContent').val($('#postContent'+id).html())
+                $('#editPostContent').val($('#postContent' + id).html())
                 $('#editPostImage').val('')
                 $('#editPostDialog').show()
             } else {
@@ -148,7 +148,7 @@
                         $('#userImage').prop('src', '/attachment/user/' + response.id)
                         $('#userName').html(response.username)
                         $('#userEmail').html(response.email)
-                        $('#userCreated').html(response.joined)
+                        $('#userCreated').html("가입 일자: " + getJoinded(response.joined))
                         $('#userInfo').show();
                     }
                 },
@@ -157,6 +157,20 @@
                 }
             })
             closeLoginDialog();
+        }
+
+        function getJoinded(joined) {
+            let joinedTime = Date.parse(joined)/1000
+            let now = new Date().getTime()/1000
+            let diff = now - joinedTime
+            let day, hour, minute;
+            console.log(joined + " " + joinedTime + " " + diff)
+            day = Math.floor(diff / (60 * 60 * 24))
+            diff %= (60 * 60 * 24)
+            hour = Math.floor(diff / (60 * 60))
+            diff %= (60 * 60)
+            minute = Math.floor(diff / (60))
+            return day + "일 " + hour + "시간 " + minute + "분"
         }
 
         function removePost(id) {
@@ -212,7 +226,7 @@
                                     fileName: response.originalName
                                 }),
                                 success: function (response) {
-                                    $('#postImg'+response.id).prop('src', '/attachment/comment/' + response.id + '?' + new Date().getTime())
+                                    $('#postImg' + response.id).prop('src', '/attachment/comment/' + response.id + '?' + new Date().getTime())
                                     $('#postContent' + response.id).html(response.content)
                                 },
                                 error: function (err) {
@@ -222,7 +236,7 @@
                         )
                     }
                 })
-            }else{
+            } else {
                 $.ajax({
                         url: '/updateComment',
                         type: "PUT",
